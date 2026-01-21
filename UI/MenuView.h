@@ -138,7 +138,7 @@
     [self.tabBar setTitleTextAttributes:selectedAttributes forState:UIControlStateSelected];
     
     // Set background color for the selected tab
-    if (@available(iOS 13.0, *)) {
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 13.0) {
         self.tabBar.selectedSegmentTintColor = self.accentColor;
         self.tabBar.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.1];
     }

@@ -1,5 +1,4 @@
 //Library
-#include "Game/Structs.h"
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
@@ -20,29 +19,34 @@
 #include "Lib/Monostring.h"
 //Game
 #import "Lib/Resolver.hpp"
-#import "Game/GameFunctions.hpp"
 
 //UI
 #import "UI/UIManager.h"
 #import "UI/TypeSelectionView.h"
-#include "Game/code.h"
+#include "Game/GameFunction.h"
 
 @interface UIManager (Handlers)
 - (void)handleZoomSwitch:(UISwitch *)sender;
 - (void)handleZoomSlider:(UISlider *)sender;
+- (void)handleSpeedSwitch:(UISwitch *)sender;
+- (void)handleSpeedSlider:(UISlider *)sender;
+- (void)handleNoKillCDSwitch:(UISwitch *)sender;
+- (void)handleSabotageSpamSwitch:(UISwitch *)sender;
+- (void)handleNoFogSwitch:(UISwitch *)sender;
+- (void)handleWallhackSwitch:(UISwitch *)sender;
 - (void)onTimer;
 @end
 
 @implementation UIManager (Handlers)
-- (void)handleZoomSwitch:(UISwitch *)sender {
-    Vars.CameraZoom = sender.isOn;
-}
-- (void)handleZoomSlider:(UISlider *)sender {
-    Vars.CameraSize = sender.value;
-}
-- (void)onTimer {
-    render_lop();
-}
+- (void)handleZoomSwitch:(UISwitch *)sender { Vars.CameraZoom = sender.isOn; }
+- (void)handleZoomSlider:(UISlider *)sender { Vars.CameraSize = sender.value; }
+- (void)handleSpeedSwitch:(UISwitch *)sender { Vars.Speedhack = sender.isOn; }
+- (void)handleSpeedSlider:(UISlider *)sender { Vars.SpeedMultiplier = sender.value; }
+- (void)handleNoKillCDSwitch:(UISwitch *)sender { Vars.NoKillCooldown = sender.isOn; }
+- (void)handleSabotageSpamSwitch:(UISwitch *)sender { Vars.SabotageSpam = sender.isOn; }
+- (void)handleNoFogSwitch:(UISwitch *)sender { Vars.NoFog = sender.isOn; }
+- (void)handleWallhackSwitch:(UISwitch *)sender { Vars.Wallhack = sender.isOn; }
+- (void)onTimer { render_lop(); }
 @end
 
 static UIManager *_UIManager = [UIManager shared];
@@ -54,47 +58,66 @@ static void SetupUI() {
     menu.telegramURL = @"https://t.me/ioshacktutorial";
     menu.discordURL = @"https://discord.gg/iostutorials";
     
-    [menu setMenuTitle:@"LAST OF EARTH"];
-    [menu setMenuSubtitle:@"Premium Mod Menu v2.5"];
+    [menu setMenuTitle:@"GGD PREMIUM CHEATS"];
+    [menu setMenuSubtitle:@"Menu By Hào Đàm v2.5"];
 
     // TAB 0: Giao chiến (Combat)
     [menu setTabIndex:0];
     [menu addSectionTitle:@"CHẾ ĐỘ CHIẾN ĐẤU"];
-    [menu addFeatureSwitch:@"Bất tử (God Mode)" description:@"Nhân vật sẽ không bị mất máu."];
-    [menu addFeatureSwitch:@"Vô hạn đạn" description:@"Bắn không giới hạn đạn."];
-    [menu addFeatureSwitch:@"Không giật" description:@"Loại bỏ độ giật của súng."];
-    [menu addSlider:@"Tốc độ bắn" max:10.0 min:1.0 value:1.0];
+    
+    [menu addFeatureSwitch:@"Tăng tốc (Speedhack)" description:@"Di chuyển nhanh hơn bình thường."];
+    [[menu.switches objectForKey:@"Tăng tốc (Speedhack)"] addTarget:_UIManager action:@selector(handleSpeedSwitch:) forControlEvents:UIControlEventValueChanged];
+    
+    [menu addSlider:@"Tốc độMultiplier" max:10.0 min:1.0 value:Vars.SpeedMultiplier];
+    [[menu.sliders objectForKey:@"Tốc độMultiplier"] addTarget:_UIManager action:@selector(handleSpeedSlider:) forControlEvents:UIControlEventValueChanged];
+
+    [menu addFeatureSwitch:@"Hồi chiêu giết" description:@"Xóa thời gian chờ hồi chiêu giết."];
+    [[menu.switches objectForKey:@"Hồi chiêu giết"] addTarget:_UIManager action:@selector(handleNoKillCDSwitch:) forControlEvents:UIControlEventValueChanged];
+    
+    [menu addFeatureSwitch:@"Spam Phá hoại" description:@"Xóa hồi chiêu Sabotage."];
+    [[menu.switches objectForKey:@"Spam Phá hoại"] addTarget:_UIManager action:@selector(handleSabotageSpamSwitch:) forControlEvents:UIControlEventValueChanged];
     
     // TAB 1: Hình ảnh (Visuals)
     [menu setTabIndex:1];
-    [menu addSectionTitle:@"HIỂN THỊ CHI TIẾT"];
-    [menu addFeatureSwitch:@"ESP Khung (Box)" description:@"Hiển thị khung bao quanh kẻ địch."];
+    [menu addSectionTitle:@"CAMERA VISUALS"];
     
-    [menu addSectionTitle:@"CÀI ĐẶT CAMERA"];
+    [menu addFeatureSwitch:@"Xóa sương mù" description:@"Hiển thị toàn bộ bản đồ rõ nét."];
+    [[menu.switches objectForKey:@"Xóa sương mù"] addTarget:_UIManager action:@selector(handleNoFogSwitch:) forControlEvents:UIControlEventValueChanged];
+    
+    [menu addSectionTitle:@"CAMERA SETTINGS"];
     [menu addFeatureSwitch:@"Bật Zoom Camera" description:@"Thay đổi độ xa gần của tầm nhìn."];
     [[menu.switches objectForKey:@"Bật Zoom Camera"] addTarget:_UIManager action:@selector(handleZoomSwitch:) forControlEvents:UIControlEventValueChanged];
     
     [menu addSlider:@"Độ phóng (Zoom)" max:20.0 min:3.0 value:Vars.CameraSize];
     [[menu.sliders objectForKey:@"Độ phóng (Zoom)"] addTarget:_UIManager action:@selector(handleZoomSlider:) forControlEvents:UIControlEventValueChanged];
 
-    [menu addComboSelector:@"Màu sắc ESP" options:@[@"Xanh lá", @"Đỏ", @"Vàng", @"Trắng"] selectedIndex:0 handler:^(NSInteger index) {
-        // Logic đổi màu ở đây
-        os_log(OS_LOG_DEFAULT, "Selected color index: %ld", (long)index);
-    }];
-
     // TAB 2: Khác (Others)
     [menu setTabIndex:2];
-    [menu addSectionTitle:@"TÍNH NĂNG KHÁC"];
-    [menu addSlider:@"Tốc độ chạy" max:5.0 min:1.0 value:1.0];
-    [menu addSlider:@"Độ cao nhảy" max:100.0 min:10.0 value:10.0];
-    [menu addTextField:@"Dịch chuyển (XYZ)" placeholder:@"Nhập tọa độ: 100;20;100" handler:^(NSString *text) {
-    }];
-    [menu addButton:@"Hồi máu nhanh" withHandler:^{
+    [menu addSectionTitle:@"OTHER FEATURES"];
+    
+    [menu addFeatureSwitch:@"Đi xuyên tường" description:@"Có thể đi qua mọi chướng ngại vật."];
+    [[menu.switches objectForKey:@"Đi xuyên tường"] addTarget:_UIManager action:@selector(handleWallhackSwitch:) forControlEvents:UIControlEventValueChanged];
+    
+    [menu addButton:@"Hoàn thành Nhiệm vụ" withHandler:^{
+        Vars.InstantTask = true;
     }];
 
     // TAB 3: Cài đặt (Settings)
     [menu setTabIndex:3];
     [menu addSectionTitle:@"TÙY CHỈNH GIAO DIỆN"];
+    [menu addComboSelector:@"Màu chủ đạo" options:@[@"Xanh dương", @"Đỏ rực", @"Xanh lá", @"Vàng", @"Tím", @"Hồng"] selectedIndex:0 handler:^(NSInteger index) {
+        UIColor *selectedColor;
+        switch (index) {
+            case 0: selectedColor = [UIColor colorWithRed:110.0/255.0 green:142.0/255.0 blue:251.0/255.0 alpha:1.0]; break; // Blue
+            case 1: selectedColor = [UIColor colorWithRed:255.0/255.0 green:59.0/255.0 blue:48.0/255.0 alpha:1.0]; break;  // Red
+            case 2: selectedColor = [UIColor colorWithRed:52.0/255.0 green:199.0/255.0 blue:89.0/255.0 alpha:1.0]; break;  // Green
+            case 3: selectedColor = [UIColor colorWithRed:255.0/255.0 green:204.0/255.0 blue:0.0/255.0 alpha:1.0]; break;  // Yellow
+            case 4: selectedColor = [UIColor colorWithRed:175.0/255.0 green:82.0/255.0 blue:222.0/255.0 alpha:1.0]; break; // Purple
+            case 5: selectedColor = [UIColor colorWithRed:255.0/255.0 green:45.0/255.0 blue:85.0/255.0 alpha:1.0]; break;  // Pink
+            default: selectedColor = [UIColor colorWithRed:110.0/255.0 green:142.0/255.0 blue:251.0/255.0 alpha:1.0]; break;
+        }
+        [menu setMenuAccentColor:selectedColor];
+    }];
     [menu addThemeSlider:@"Độ trong suốt" property:@"opacity" max:1.0 min:0.2 value:1.0];
     [menu addThemeSlider:@"Độ bo góc" property:@"corner" max:30.0 min:0.0 value:24.0];
     [menu addThemeSlider:@"Độ dày viền" property:@"border" max:5.0 min:0.0 value:1.0];
@@ -105,7 +128,6 @@ static void SetupUI() {
         [menu setMenuBorderWidth:1.0];
         menu.alpha = 1.0;
     }];
-    
     [menu updateLayout];
 }
 
