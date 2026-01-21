@@ -1,0 +1,1 @@
+#define WAIT_TIME 5 // 5 seconds to wait before starting our cheats
