@@ -1,130 +1,105 @@
-# LAST OF EARTH - PREMIUM MOD MENU
+# GGD PREMIUM CHEATS - UI FRAMEWORK
 
-Chào mừng bạn đến với dự án Mod Menu cao cấp dành cho iOS. Đây là hướng dẫn chi tiết về cách cài đặt, sử dụng và triển khai các tính năng trong menu.
+Chào mừng bạn đến với hướng dẫn sử dụng phiên bản mới của Mod Menu. Hệ thống đã được nâng cấp lên cơ chế **Block-based Handlers**, giúp việc lập trình tính năng trở nên đơn giản và gọn gàng hơn rất nhiều.
 
 ## 🛠 1. Hướng dẫn Cài đặt (Installation)
 
-Dự án này được xây dựng bằng **Theos**. Đảm bảo bạn đã cài đặt môi trường Theos trên macOS hoặc Linux (WSL cho Windows).
+Dự án sử dụng **Theos** để biên dịch.
 
-### Bước 1: Chuẩn bị Tools
+### Bước 1: Cấu hình Makefile
 
-- Cài đặt Theos: [Theos Installation Guide](https://theos.dev/docs/installation)
-- Cài đặt SDK iOS (đề xuất iOS 14.5 trở lên).
+Kiểm tra `THEOS_DEVICE_IP` và `ARCHS` (thường là `arm64`).
 
-### Bước 2: Cấu hình Makefile
-
-Mở file `Makefile` và kiểm tra các thông số sau để phù hợp với môi trường của bạn:
-
-```makefile
-THEOS_DEVICE_IP = 192.168.1.x  # IP của iPhone đã Jailbreak
-ARCHS = arm64 arm64e
-```
-
-### Bước 3: Biên dịch và Cài đặt
-
-Chạy các lệnh sau trong terminal tại thư mục gốc của dự án:
+### Bước 2: Biên dịch
 
 ```bash
-make clean           # Xóa các file rác cũ
-make package         # Đóng gói file .deb
-make install         # Cài đặt trực tiếp lên iPhone (yêu cầu IP ở bước 2)
+make clean && make package install
 ```
+
+_Lưu ý: Nếu gặp lỗi `___isOSVersionAtLeast`, hệ thống đã tự động chuyển sang kiểm tra phiên bản bằng `UIDevice` để fix lỗi này._
 
 ---
 
 ## 📱 2. Hướng dẫn Sử dụng (Usage)
 
-1. **Mở Menu**: Sau khi vào game, đợi khoảng 5 giây (theo cấu hình `WAIT_TIME` trong `Config.h`), một nút biểu tượng (Floating Button) sẽ xuất hiện trên màn hình.
-2. **Thao tác**:
-   - Chạm vào nút biểu tượng để **Mở/Đóng** menu.
-   - Giữ và kéo nút biểu tượng để di chuyển vị trí.
-   - Menu hỗ trợ kéo (drag) để di chuyển toàn bộ giao diện bảng điều khiển.
-3. **Tab**: Menu được chia làm 4 tab: **Giao chiến**, **Hình ảnh**, **Khác**, và **Cài đặt**. Chạm vào thanh tab để chuyển đổi.
+- **Kích hoạt**: Menu tự động hiện sau 5 giây vào game.
+- **Thao tác**: Chạm icon để Mở/Đóng. Kéo icon để thay đổi vị trí.
+- **Tính năng**: Được chia làm 4 Tab: Giao chiến, Hình ảnh, Khác, Cài đặt.
 
 ---
 
-## 💻 3. Hướng dẫn Triển khai (Implementation)
+## 💻 3. Cách triển khai tính năng (New Block System)
 
-Để triển khai các tính năng hack vào game, bạn cần biết cách kiểm tra trạng thái của các thành phần UI từ file `Tweak.mm`.
+Thay vì phải tạo các hàm `handle...` rắc rối, giờ đây bạn có thể gán logic trực tiếp khi tạo UI.
 
-### Cách lấy đối tượng Menu:
+### 1. Thêm Switch (Bật/Tắt)
 
-```objectivec
-MenuView *menu = [UIManager shared].menu;
-```
-
-### 1. Kiểm tra Switch (Bật/Tắt)
-
-Sử dụng tên tiêu đề (title) bạn đã đặt khi thêm switch để kiểm tra.
+Sử dụng block `handler:^(BOOL isOn)` để cập nhật biến ngay lập tức.
 
 ```objectivec
-// Ví dụ: Kiểm tra trạng thái "Bất tử"
-if ([menu.switches[@"Bất tử (God Mode)"] isOn]) {
-    // Thực hiện logic hack ở đây
-}
-```
-
-### 2. Kiểm tra Slider (Thanh trượt)
-
-Lấy giá trị hiện tại của thanh trượt (trả về kiểu `float`).
-
-```objectivec
-// Ví dụ: Lấy tốc độ chạy
-float speedValue = [menu.sliders[@"Tốc độ chạy"] value];
-// Sử dụng giá trị speedValue cho nhân vật
-```
-
-### 3. Kiểm tra Combo Selector (Danh sách chọn)
-
-Dựa vào `handler` bạn đã viết khi khởi tạo hoặc kiểm tra tiêu đề nút.
-
-```objectivec
-// Thông thường xử lý ngay trong handler khi khởi tạo:
-[menu addComboSelector:@"Màu sắc ESP" options:@[@"Xanh", @"Đỏ"] selectedIndex:0 handler:^(NSInteger index) {
-    if (index == 0) { /* Màu xanh */ }
-    else { /* Màu đỏ */ }
+[menu addFeatureSwitch:@"Tăng tốc" description:@"Di chuyển nhanh hơn" handler:^(BOOL isOn) {
+    Vars.Speedhack = isOn; // Gán trực tiếp vào biến lưu trữ
 }];
 ```
 
-### 4. Xử lý Button (Nút bấm)
+### 2. Thêm Slider (Thanh trượt)
 
-Thực hiện hành động ngay lập tức thông qua block `withHandler`.
+Sử dụng block `handler:^(CGFloat value)` để nhận giá trị số.
 
 ```objectivec
-[menu addButton:@"Hồi máu" withHandler:^{
-    // Code hồi máu ngay lập tức
+[menu addSlider:@"Tốc độ" max:10.0 min:1.0 value:2.0 handler:^(CGFloat value) {
+    Vars.SpeedMultiplier = value;
+}];
+```
+
+### 3. Thêm Button (Nút bấm)
+
+```objectivec
+[menu addButton:@"Hoàn thành Nhiệm vụ" withHandler:^{
+    Vars.InstantTask = true;
+}];
+```
+
+### 4. Thêm Combo Selector (Danh sách chọn)
+
+```objectivec
+[menu addComboSelector:@"Màu sắc" options:@[@"Đỏ", @"Xanh"] selectedIndex:0 handler:^(NSInteger index) {
+    // index 0 = Đỏ, index 1 = Xanh
 }];
 ```
 
 ---
 
-## 🔍 4. Mẫu cấu trúc trong Tweak.mm
+## 🔍 4. Cấu trúc vòng lặp Hack (Vô cùng quan trọng)
 
-Dưới đây là cách bạn nên tổ chức code để kiểm tra trạng thái liên tục:
+Để các tính năng hoạt động mượt mà, game cần được cập nhật giá trị liên tục thông qua `CADisplayLink` (60 FPS).
+
+Trong `Tweak.mm`, chúng ta đã thiết lập:
 
 ```objectivec
-static void update_hacks() {
-    MenuView *menu = [UIManager shared].menu;
-    if (!menu) return;
-
-    // --- Tab Giao chiến ---
-    if ([menu.switches[@"Vô hạn đạn"] isOn]) {
-        // Code set ammo = 999
-    }
-
-    // --- Tab Khác ---
-    float jumpHeight = [menu.sliders[@"Độ cao nhảy"] value];
-    // Code set jump_power = jumpHeight
+// Vòng lặp này gọi render_lop() 60 lần/giây
+- (void)onTimer {
+    render_lop(); // Logic thực thi nằm trong file GameFunction.h
 }
-
-// Gọi update_hacks trong một vòng lặp hoặc Hook
 ```
 
-## ⚠️ Lưu ý Quan trọng
+**Cách viết logic trong `GameFunction.h`:**
 
-- Tên các thành phần (`@"Tiêu đề"`) trong `menu.switches[@"Tiêu đề"]` phải **trùng khớp hoàn toàn** với tên bạn đã khai báo trong hàm `SetupUI()`.
-- Dự án sử dụng `os_log` để debug. Bạn có thể xem log thông qua Console.app trên macOS hoặc lệnh `socat` trên iOS.
+```cpp
+void apply_speedhack() {
+    if (!Vars.Speedhack) return; // Nếu switch OFF thì dừng
+    // ... code thực hiện tăng tốc ...
+}
+```
 
 ---
 
-_Phát triển bởi: IOS TUTORIALS_
+## ⚠️ Lưu ý kỹ thuật
+
+- **Đồng bộ biến**: Luôn gán giá trị từ Menu vào cấu trúc `Vars` để hàm `render_lop()` có thể đọc được.
+- **Tên UI**: Tên trong `menu.switches` hoặc `menu.sliders` phải khớp 100% với tên lúc khởi tạo nếu bạn muốn truy cập thủ công.
+- **Màu sắc**: Có thể đổi màu chủ đạo (Accent Color) ngay trong tab Cài đặt.
+
+---
+
+_Phát triển bởi: Hào Đàm - Phiên bản v2.5_
