@@ -25,28 +25,14 @@
 #import "UI/TypeSelectionView.h"
 #include "Game/GameFunction.h"
 
-@interface UIManager (Handlers)
-- (void)handleZoomSwitch:(UISwitch *)sender;
-- (void)handleZoomSlider:(UISlider *)sender;
-- (void)handleSpeedSwitch:(UISwitch *)sender;
-- (void)handleSpeedSlider:(UISlider *)sender;
-- (void)handleNoKillCDSwitch:(UISwitch *)sender;
-- (void)handleSabotageSpamSwitch:(UISwitch *)sender;
-- (void)handleNoFogSwitch:(UISwitch *)sender;
-- (void)handleWallhackSwitch:(UISwitch *)sender;
+@interface UIManager (HackLoop)
 - (void)onTimer;
 @end
 
-@implementation UIManager (Handlers)
-- (void)handleZoomSwitch:(UISwitch *)sender { Vars.CameraZoom = sender.isOn; }
-- (void)handleZoomSlider:(UISlider *)sender { Vars.CameraSize = sender.value; }
-- (void)handleSpeedSwitch:(UISwitch *)sender { Vars.Speedhack = sender.isOn; }
-- (void)handleSpeedSlider:(UISlider *)sender { Vars.SpeedMultiplier = sender.value; }
-- (void)handleNoKillCDSwitch:(UISwitch *)sender { Vars.NoKillCooldown = sender.isOn; }
-- (void)handleSabotageSpamSwitch:(UISwitch *)sender { Vars.SabotageSpam = sender.isOn; }
-- (void)handleNoFogSwitch:(UISwitch *)sender { Vars.NoFog = sender.isOn; }
-- (void)handleWallhackSwitch:(UISwitch *)sender { Vars.Wallhack = sender.isOn; }
-- (void)onTimer { render_lop(); }
+@implementation UIManager (HackLoop)
+- (void)onTimer {
+    render_lop();
+}
 @end
 
 static UIManager *_UIManager = [UIManager shared];
@@ -65,38 +51,46 @@ static void SetupUI() {
     [menu setTabIndex:0];
     [menu addSectionTitle:@"CHẾ ĐỘ CHIẾN ĐẤU"];
     
-    [menu addFeatureSwitch:@"Tăng tốc (Speedhack)" description:@"Di chuyển nhanh hơn bình thường."];
-    [[menu.switches objectForKey:@"Tăng tốc (Speedhack)"] addTarget:_UIManager action:@selector(handleSpeedSwitch:) forControlEvents:UIControlEventValueChanged];
+    [menu addFeatureSwitch:@"Tăng tốc (Speedhack)" description:@"Di chuyển nhanh hơn bình thường." handler:^(BOOL isOn) {
+        Vars.Speedhack = isOn;
+    }];
     
-    [menu addSlider:@"Tốc độMultiplier" max:10.0 min:1.0 value:Vars.SpeedMultiplier];
-    [[menu.sliders objectForKey:@"Tốc độMultiplier"] addTarget:_UIManager action:@selector(handleSpeedSlider:) forControlEvents:UIControlEventValueChanged];
+    [menu addSlider:@"Tốc độMultiplier" max:10.0 min:1.0 value:Vars.SpeedMultiplier handler:^(CGFloat value) {
+        Vars.SpeedMultiplier = value;
+    }];
 
-    [menu addFeatureSwitch:@"Hồi chiêu giết" description:@"Xóa thời gian chờ hồi chiêu giết."];
-    [[menu.switches objectForKey:@"Hồi chiêu giết"] addTarget:_UIManager action:@selector(handleNoKillCDSwitch:) forControlEvents:UIControlEventValueChanged];
+    [menu addFeatureSwitch:@"Hồi chiêu giết" description:@"Xóa thời gian chờ hồi chiêu giết." handler:^(BOOL isOn) {
+        Vars.NoKillCooldown = isOn;
+    }];
     
-    [menu addFeatureSwitch:@"Spam Phá hoại" description:@"Xóa hồi chiêu Sabotage."];
-    [[menu.switches objectForKey:@"Spam Phá hoại"] addTarget:_UIManager action:@selector(handleSabotageSpamSwitch:) forControlEvents:UIControlEventValueChanged];
+    [menu addFeatureSwitch:@"Spam Phá hoại" description:@"Xóa hồi chiêu Sabotage." handler:^(BOOL isOn) {
+        Vars.SabotageSpam = isOn;
+    }];
     
     // TAB 1: Hình ảnh (Visuals)
     [menu setTabIndex:1];
     [menu addSectionTitle:@"CAMERA VISUALS"];
     
-    [menu addFeatureSwitch:@"Xóa sương mù" description:@"Hiển thị toàn bộ bản đồ rõ nét."];
-    [[menu.switches objectForKey:@"Xóa sương mù"] addTarget:_UIManager action:@selector(handleNoFogSwitch:) forControlEvents:UIControlEventValueChanged];
+    [menu addFeatureSwitch:@"Xóa sương mù" description:@"Hiển thị toàn bộ bản đồ rõ nét." handler:^(BOOL isOn) {
+        Vars.NoFog = isOn;
+    }];
     
     [menu addSectionTitle:@"CAMERA SETTINGS"];
-    [menu addFeatureSwitch:@"Bật Zoom Camera" description:@"Thay đổi độ xa gần của tầm nhìn."];
-    [[menu.switches objectForKey:@"Bật Zoom Camera"] addTarget:_UIManager action:@selector(handleZoomSwitch:) forControlEvents:UIControlEventValueChanged];
+    [menu addFeatureSwitch:@"Bật Zoom Camera" description:@"Thay đổi độ xa gần của tầm nhìn." handler:^(BOOL isOn) {
+        Vars.CameraZoom = isOn;
+    }];
     
-    [menu addSlider:@"Độ phóng (Zoom)" max:20.0 min:3.0 value:Vars.CameraSize];
-    [[menu.sliders objectForKey:@"Độ phóng (Zoom)"] addTarget:_UIManager action:@selector(handleZoomSlider:) forControlEvents:UIControlEventValueChanged];
+    [menu addSlider:@"Độ phóng (Zoom)" max:20.0 min:3.0 value:Vars.CameraSize handler:^(CGFloat value) {
+        Vars.CameraSize = value;
+    }];
 
     // TAB 2: Khác (Others)
     [menu setTabIndex:2];
     [menu addSectionTitle:@"OTHER FEATURES"];
     
-    [menu addFeatureSwitch:@"Đi xuyên tường" description:@"Có thể đi qua mọi chướng ngại vật."];
-    [[menu.switches objectForKey:@"Đi xuyên tường"] addTarget:_UIManager action:@selector(handleWallhackSwitch:) forControlEvents:UIControlEventValueChanged];
+    [menu addFeatureSwitch:@"Đi xuyên tường" description:@"Có thể đi qua mọi chướng ngại vật." handler:^(BOOL isOn) {
+        Vars.Wallhack = isOn;
+    }];
     
     [menu addButton:@"Hoàn thành Nhiệm vụ" withHandler:^{
         Vars.InstantTask = true;
@@ -105,22 +99,24 @@ static void SetupUI() {
     // TAB 3: Cài đặt (Settings)
     [menu setTabIndex:3];
     [menu addSectionTitle:@"TÙY CHỈNH GIAO DIỆN"];
+    
     [menu addComboSelector:@"Màu chủ đạo" options:@[@"Xanh dương", @"Đỏ rực", @"Xanh lá", @"Vàng", @"Tím", @"Hồng"] selectedIndex:0 handler:^(NSInteger index) {
         UIColor *selectedColor;
         switch (index) {
-            case 0: selectedColor = [UIColor colorWithRed:110.0/255.0 green:142.0/255.0 blue:251.0/255.0 alpha:1.0]; break; // Blue
-            case 1: selectedColor = [UIColor colorWithRed:255.0/255.0 green:59.0/255.0 blue:48.0/255.0 alpha:1.0]; break;  // Red
-            case 2: selectedColor = [UIColor colorWithRed:52.0/255.0 green:199.0/255.0 blue:89.0/255.0 alpha:1.0]; break;  // Green
-            case 3: selectedColor = [UIColor colorWithRed:255.0/255.0 green:204.0/255.0 blue:0.0/255.0 alpha:1.0]; break;  // Yellow
-            case 4: selectedColor = [UIColor colorWithRed:175.0/255.0 green:82.0/255.0 blue:222.0/255.0 alpha:1.0]; break; // Purple
-            case 5: selectedColor = [UIColor colorWithRed:255.0/255.0 green:45.0/255.0 blue:85.0/255.0 alpha:1.0]; break;  // Pink
+            case 0: selectedColor = [UIColor colorWithRed:110.0/255.0 green:142.0/255.0 blue:251.0/255.0 alpha:1.0]; break;
+            case 1: selectedColor = [UIColor colorWithRed:255.0/255.0 green:59.0/255.0 blue:48.0/255.0 alpha:1.0]; break;
+            case 2: selectedColor = [UIColor colorWithRed:52.0/255.0 green:199.0/255.0 blue:89.0/255.0 alpha:1.0]; break;
+            case 3: selectedColor = [UIColor colorWithRed:255.0/255.0 green:204.0/255.0 blue:0.0/255.0 alpha:1.0]; break;
+            case 4: selectedColor = [UIColor colorWithRed:175.0/255.0 green:82.0/255.0 blue:222.0/255.0 alpha:1.0]; break;
+            case 5: selectedColor = [UIColor colorWithRed:255.0/255.0 green:45.0/255.0 blue:85.0/255.0 alpha:1.0]; break;
             default: selectedColor = [UIColor colorWithRed:110.0/255.0 green:142.0/255.0 blue:251.0/255.0 alpha:1.0]; break;
         }
         [menu setMenuAccentColor:selectedColor];
     }];
-    [menu addThemeSlider:@"Độ trong suốt" property:@"opacity" max:1.0 min:0.2 value:1.0];
-    [menu addThemeSlider:@"Độ bo góc" property:@"corner" max:30.0 min:0.0 value:24.0];
-    [menu addThemeSlider:@"Độ dày viền" property:@"border" max:5.0 min:0.0 value:1.0];
+
+    [menu addThemeSlider:@"Độ trong suốt" property:@"opacity" max:1.0 min:0.2 value:1.0 handler:nil];
+    [menu addThemeSlider:@"Độ bo góc" property:@"corner" max:30.0 min:0.0 value:24.0 handler:nil];
+    [menu addThemeSlider:@"Độ dày viền" property:@"border" max:5.0 min:0.0 value:1.0 handler:nil];
     
     [menu addSectionTitle:@"HÀNH ĐỘNG"];
     [menu addButton:@"Reset Cài đặt" withHandler:^{
@@ -128,6 +124,7 @@ static void SetupUI() {
         [menu setMenuBorderWidth:1.0];
         menu.alpha = 1.0;
     }];
+    
     [menu updateLayout];
 }
 

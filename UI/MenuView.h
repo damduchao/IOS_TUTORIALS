@@ -17,8 +17,8 @@
 
 + (instancetype)menuWithFrame:(CGRect)frame;
 - (void)makeDraggable;
-- (void)addFeatureSwitch:(NSString *)title description:(NSString *)desc;
-- (void)addSlider:(NSString *)title max:(CGFloat)max min:(CGFloat)min value:(CGFloat)value;
+- (void)addFeatureSwitch:(NSString *)title description:(NSString *)desc handler:(void (^)(BOOL isOn))handler;
+- (void)addSlider:(NSString *)title max:(CGFloat)max min:(CGFloat)min value:(CGFloat)value handler:(void (^)(CGFloat value))handler;
 - (void)addButton:(NSString *)title withHandler:(void (^)(void))handler;
 - (void)addComboSelector:(NSString *)title options:(NSArray *)options selectedIndex:(NSInteger)index handler:(void (^)(NSInteger selectedIndex))handler;
 - (void)addTextField:(NSString *)title placeholder:(NSString *)placeholder handler:(void (^)(NSString *text))handler;
@@ -27,7 +27,7 @@
 
 - (void)addSectionTitle:(NSString *)title;
 - (void)setTabIndex:(NSInteger)index;
-- (void)addThemeSlider:(NSString *)title property:(NSString *)prop max:(CGFloat)max min:(CGFloat)min value:(CGFloat)value;
+- (void)addThemeSlider:(NSString *)title property:(NSString *)prop max:(CGFloat)max min:(CGFloat)min value:(CGFloat)value handler:(void (^)(CGFloat value))handler;
 - (void)updateLayout;
 - (void)setMenuAccentColor:(UIColor *)color;
 - (void)setMenuGlassEffect:(BOOL)enabled;
@@ -179,8 +179,8 @@
     }
 }
 
-- (void)addThemeSlider:(NSString *)title property:(NSString *)prop max:(CGFloat)max min:(CGFloat)min value:(CGFloat)value {
-    [self addSlider:title max:max min:min value:value];
+- (void)addThemeSlider:(NSString *)title property:(NSString *)prop max:(CGFloat)max min:(CGFloat)min value:(CGFloat)value handler:(void (^)(CGFloat value))handler {
+    [self addSlider:title max:max min:min value:value handler:handler];
     UISlider *sl = self.sliders[title];
     objc_setAssociatedObject(sl, "themeProp", prop, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
@@ -264,7 +264,7 @@
     self.currentCategoryCounter = index;
 }
 
-- (void)addFeatureSwitch:(NSString *)title description:(NSString *)desc {
+- (void)addFeatureSwitch:(NSString *)title description:(NSString *)desc handler:(void (^)(BOOL isOn))handler {
     UIView *container = [[UIView alloc] initWithFrame:CGRectMake(20, 0, self.frame.size.width - 40, 50)];
     container.tag = self.currentCategoryCounter + 1000;
     
@@ -281,7 +281,9 @@
     [container addSubview:descLabel];
     
     UISwitch *toggle = [[UISwitch alloc] initWithFrame:CGRectMake(container.frame.size.width - 51, 10, 51, 31)];
-    toggle.onTintColor = [UIColor colorWithRed:110.0/255.0 green:142.0/255.0 blue:251.0/255.0 alpha:1.0];
+    toggle.onTintColor = self.accentColor;
+    [toggle addTarget:self action:@selector(switchChanged:) forControlEvents:UIControlEventValueChanged];
+    objc_setAssociatedObject(toggle, "switchHandler", handler, OBJC_ASSOCIATION_COPY_NONATOMIC);
     [container addSubview:toggle];
     
     [self.contentView addSubview:container];
@@ -289,7 +291,7 @@
     [self updateLayout];
 }
 
-- (void)addSlider:(NSString *)title max:(CGFloat)max min:(CGFloat)min value:(CGFloat)value {
+- (void)addSlider:(NSString *)title max:(CGFloat)max min:(CGFloat)min value:(CGFloat)value handler:(void (^)(CGFloat value))handler {
     UIView *container = [[UIView alloc] initWithFrame:CGRectMake(20, 0, self.frame.size.width - 40, 60)];
     container.tag = self.currentCategoryCounter + 1000;
     
@@ -300,7 +302,7 @@
     [container addSubview:titleLabel];
     
     UILabel *valueLabel = [[UILabel alloc] initWithFrame:CGRectMake(container.frame.size.width - 50, 0, 50, 20)];
-    valueLabel.textColor = [UIColor colorWithRed:110.0/255.0 green:142.0/255.0 blue:251.0/255.0 alpha:1.0];
+    valueLabel.textColor = self.accentColor;
     valueLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightBold];
     valueLabel.textAlignment = NSTextAlignmentRight;
     valueLabel.text = [NSString stringWithFormat:@"%.1f", value];
@@ -310,8 +312,9 @@
     slider.minimumValue = min;
     slider.maximumValue = max;
     slider.value = value;
-    slider.minimumTrackTintColor = [UIColor colorWithRed:110.0/255.0 green:142.0/255.0 blue:251.0/255.0 alpha:1.0];
+    slider.minimumTrackTintColor = self.accentColor;
     [slider addTarget:self action:@selector(sliderValueChanged:) forControlEvents:UIControlEventValueChanged];
+    objc_setAssociatedObject(slider, "sliderHandler", handler, OBJC_ASSOCIATION_COPY_NONATOMIC);
     [container addSubview:slider];
     
     [self.contentView addSubview:container];
@@ -449,12 +452,20 @@
     self.scrollView.contentSize = CGSizeMake(self.scrollView.frame.size.width, yOffset);
 }
 
+- (void)switchChanged:(UISwitch *)sender {
+    void (^handler)(BOOL) = objc_getAssociatedObject(sender, "switchHandler");
+    if (handler) handler(sender.isOn);
+}
+
 - (void)sliderValueChanged:(UISlider *)slider {
     for (NSString *key in self.sliders) {
         if (self.sliders[key] == slider) {
             UILabel *label = (UILabel *)self.sliderLabels[key];
             label.text = [NSString stringWithFormat:@"%.1f", slider.value];
             
+            void (^handler)(CGFloat) = objc_getAssociatedObject(slider, "sliderHandler");
+            if (handler) handler(slider.value);
+
             NSString *prop = objc_getAssociatedObject(slider, "themeProp");
             if ([prop isEqualToString:@"opacity"]) self.alpha = slider.value;
             if ([prop isEqualToString:@"corner"]) [self setMenuCornerRadius:slider.value];
@@ -489,6 +500,6 @@
 }
 
 - (void)closeButtonTapped:(UIButton *)sender { [self close]; }
-- (void)addFeatureSwitch:(NSString *)title { [self addFeatureSwitch:title description:@"Custom feature"]; }
+- (void)addFeatureSwitch:(NSString *)title { [self addFeatureSwitch:title description:@"Custom feature" handler:nil]; }
 
 @end
