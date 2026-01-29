@@ -81,11 +81,11 @@ typedef struct _monoString
     }
 }monoString;
 
+#include "Resolver.hpp"
 static monoString *il2cpp_string_new(const char *str) {
-    static monoString *(*String_CreateString)(void *instance, const char *str, int start, int len) = (monoString *(*)(void *, const char *, int, int)) getRealOffset(ENCRYPTOFFSET("0x52738D4"));
-    return String_CreateString(nullptr, str, 0, strlen(str));
+    if (!str) return nullptr;
+    return Resolve::Invoke<monoString*, const char*>("il2cpp_string_new", str);
 }
-//private string CreateString(sbyte* value, int32 startIndex, int32 length) { }
 
 template <typename T>
 struct monoList {
